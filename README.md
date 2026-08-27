@@ -1,10 +1,7 @@
 # Student Registration System
 
-A Laravel-based digital student registration system built for **ITST 302 – Client-Server
-Technologies, Week 4 Laboratory Activity (Mini Project 03)**. It replaces a paper-based
-registration process with a validated, database-backed, step-by-step registration wizard
-that captures a student's personal, contact, address, and academic information along with a
-profile picture uploaded through a drag-and-drop file attachment control.
+A Laravel-based digital student registration system built for ITST 302 – Client-Server
+Technologies, Week 4 Laboratory Activity. It replaces a paper-based registration process with a validated, database-backed, step-by-step registration wizard that captures a student's personal, contact, address, and academic information along with a profile picture uploaded through a drag-and-drop file attachment control.
 
 ## 2. Introduction
 
@@ -72,244 +69,108 @@ A registration submission moves through the framework in the following order:
 7. **Response** — the controller redirects to `students.show`, flashing a `success` message
    to the session; the browser follows the redirect and renders the student's profile page.
 
-```
-Browser (wizard submit)
-      │
-      ▼
-   Route (POST /students)
-      │
-      ▼
-StudentController@store
-      │
-      ▼
-StoreStudentRequest validation ──fails──▶ redirect back with errors (wizard reopens on the failing step)
-      │ passes
-      ▼
-Student::create() (Model)
-      │
-      ▼
-students table (Database)
-      │
-      ▼
-Redirect + flash message (Response) ──▶ Browser renders profile page
-```
+For better visuals, check the diagram in documentations/ folder
 
-*A polished version of this diagram is included in `documentation/`.*
+
+
 
 ## 5. Validation Rules
 
-Validation is implemented in `app/Http/Requests/StoreStudentRequest.php`, and mirrored on
-the client (masking + `pattern`/`max` attributes in `resources/js/app.js` and
-`resources/views/students/create.blade.php`) purely for instant feedback:
+All student data is checked both on the server and on the user's screen for quick feedback before it is saved. Almost every field is required except for the middle name. The system makes sure that:
 
-```php
-public function rules(): array
-{
-    return [
-        'student_number' => ['required', 'regex:/^\d{4}-\d{4}$/', 'unique:students,student_number'],
-        'first_name' => ['required', 'string', 'max:100', 'regex:'.self::NAME_PATTERN],
-        'middle_name' => ['nullable', 'string', 'max:100', 'regex:'.self::NAME_PATTERN],
-        'last_name' => ['required', 'string', 'max:100', 'regex:'.self::NAME_PATTERN],
-        'email' => ['required', 'email', 'unique:students,email'],
-        'mobile_number' => ['required', 'digits_between:10,11'],
-        'date_of_birth' => ['required', 'date', 'before:today'],
-        'gender' => ['required', 'in:Male,Female,Other'],
-        'program' => ['required', 'in:'.implode(',', self::PROGRAMS)],
-        'year_level' => ['required', 'string', 'max:50'],
-        'province' => ['required', 'string', 'max:100'],
-        'municipality_city' => ['required', 'string', 'max:100'],
-        'barangay' => ['required', 'string', 'max:100'],
-        'profile_picture' => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
-    ];
-}
-```
+- The student number follows a fixed 0000‑0000 format and is not already used.
 
-| Rule | Why it matters |
-| --- | --- |
-| **Required fields** | Every field except middle name is essential to identify, contact, and place the student. Missing data at this stage means broken records everywhere downstream. |
-| **Unique constraints** (`student_number`, `email`) | Prevents duplicate enrollment records and guarantees each student can be uniquely identified and reached by email. |
-| **Student number format** (`regex:/^\d{4}-\d{4}$/`) | Enforces the institution's `0000-0000` numbering scheme and rejects letters or malformed input before it ever reaches the database. |
-| **Letters-only names** (`regex` on `first_name`/`middle_name`/`last_name`) | A digit in a name field is never valid data — this rule (and the matching live input mask) rejects it outright instead of silently storing a typo. |
-| **Digits-only mobile number** (`digits_between:10,11`) | Rejects letters or symbols in a field that should only ever contain digits, catching typos before they reach the database. |
-| **Email validation** | Confirms the address is well-formed before it is stored and later used for official communication. |
-| **Future-date rejection** (`before:today` on `date_of_birth`) | A birthdate in the future is never valid — this rule (backed by the date input's `max` attribute) makes that impossible to submit. |
-| **Program whitelist** (`in:` the college's 18 official BS programs) | A free-text program field invites typos and made-up programs; restricting it to a fixed list (also rendered as a `<select>`) guarantees every record maps to a program that actually exists. |
-| **Image validation** (`image`, `mimes:jpg,jpeg,png`) | Ensures the uploaded file is actually a displayable image and not an arbitrary file type — a basic but important defense against malicious uploads. |
-| **File size restriction** (`max:2048`) | Caps uploads at 2MB to protect server storage and keep page loads fast. |
+- Each student has a unique email address that is properly formatted.
 
-## 6. Database Design
+- Name fields contain only letters with no numbers or symbols.
 
-### Table: `students`
+- The mobile number contains only digits and is 10 or 11 digits long.
 
-| Column | Type | Constraints |
-| --- | --- | --- |
-| `id` | `bigint unsigned` | Primary key, auto-increment |
-| `student_number` | `string` | Unique, not null, format `0000-0000` |
-| `first_name` | `string` | Not null, letters only |
-| `middle_name` | `string` | Nullable, letters only |
-| `last_name` | `string` | Not null, letters only |
-| `email` | `string` | Unique, not null |
-| `mobile_number` | `string` | Not null, digits only |
-| `date_of_birth` | `date` | Not null, cannot be a future date |
-| `gender` | `string` | Not null |
-| `program` | `string` | Not null, one of the college's 18 official BS programs |
-| `year_level` | `string` | Not null |
-| `province` | `string` | Not null |
-| `municipality_city` | `string` | Not null |
-| `barangay` | `string` | Not null |
-| `profile_picture` | `string` | Not null (stores the relative storage path) |
-| `created_at` / `updated_at` | `timestamp` | Managed automatically by Eloquent |
+- The date of birth must be a real date in the past, not today or in the future.
 
-*The Entity Relationship Diagram is included in `documentation/`.*
+- Gender must be chosen from a short list of options.
+
+- The program of study must be one of the college's 18 official programs, with no free‑text entries allowed.
+
+- The profile picture must be a real image file in JPG, JPEG, or PNG format and no larger than 2 MB.
+
+These checks prevent bad data from entering the system, avoid duplicate records, and protect against common typos or malicious uploads. The main table stores student information, with each column holding a specific piece of data:
+
+- A unique system ID that is automatic.
+
+- Student number, which is unique and follows the fixed format.
+
+- First, middle (optional), and last names, with letters only.
+
+- Email, which is unique, and mobile number with digits only.
+
+- Date of birth, which must be in the past.
+
+- Gender, program from the official list, and year level.
+
+- Address details including province, city or municipality, and barangay.
+
+- Profile picture stored as a file path rather than the image itself.
+
+- Automatic timestamps for when the record was created and last updated.
 
 ## 7. Flowchart
-
-```
-User Opens Registration Page (Step 1: Personal)
-        │
-        ▼
-Step 2: Photo (drag & drop or click to attach) ──▶ Step 3: Contact & Address ──▶ Step 4: Academic ──▶ Step 5: Review
-        │ (each "Continue" click validates the current step client-side)
-        ▼
-  Submit Registration
-        │
-        ▼
-  Laravel Validation
-   ┌─────────────┐
-   │ Valid Data? │
-   └──────┬──────┘
-          │
-    Yes   │   No
-     ▼    │    ▼
-Save to Database   Reopen wizard on the failing step, display errors
-     │
-     ▼
-Success Message
-     │
-     ▼
-Student Profile Page
-```
-
-*A designed version of this flowchart is included in `documentation/`.*
+A designed version of this flowchart is included in `documentation/`.
 
 ## 8. Screenshots
 
-Screenshots documenting the working system are provided in the `screenshots/` folder,
-including each step of the registration wizard (including the drag-and-drop photo upload),
-validation warnings, the flash success message, the uploaded profile picture, the database
-table, the student profile page, the VS Code project structure, and the GitHub repository.
+Screenshots documenting the working system are provided in the `screenshots/` folder.
 
 ## 9. Problems Encountered
 
-1. **No local MySQL credentials available.** The lab spec calls for MySQL, but the local
-   MySQL 8.0 service required a root password that wasn't available in this environment.
-2. **Failed server-side validation didn't return the user to the right wizard step.** Since
-   the whole page reloads on a failed submission, the wizard's JavaScript naturally restarts
-   at step one — even when the actual validation error was on step two or three, leaving the
-   user staring at a page with no visible error.
-3. **Blade facade resolution.** Before relying on facades like `Storage` inside Blade views,
-   it wasn't obvious whether they'd resolve without an explicit `use` import, since Laravel
-   11+ no longer lists facade aliases in `config/app.php`.
-4. **A drag-and-drop file input has no native "wrong type" validity state.** The HTML `accept`
-   attribute only filters what the OS file picker shows — a file dragged in from the desktop
-   can be any type, and the browser's Constraint Validation API has no built-in check for it.
 
-## 10. Solutions
+Here is the simplified description with numbering starting from 1:
 
-1. Switched `DB_CONNECTION` to the `sqlite` driver that ships pre-configured with a fresh
-   Laravel installation. It uses the exact same Eloquent models, migrations, and query
-   builder as MySQL, so the application code is unchanged — only the `.env` connection
-   differs.
-2. Marked every input with a server-side validation error (`@error($name) data-server-error
-   @enderror`) and had the wizard's JavaScript scan for that marker on page load, jumping
-   straight to the step that contains the first invalid field instead of always defaulting
-   to step one.
-3. Confirmed with `php artisan tinker --execute 'var_dump(class_exists("Storage"));'` that
-   Laravel still registers default facade class aliases (`Storage`, `Auth`, etc.) globally
-   at boot time even though `config/app.php` no longer lists them explicitly, so no import
-   was needed in the Blade views.
-4. Wrote a small client-side check in `resources/js/app.js` that inspects the selected
-   `File` object's `type` and `size` directly on the `change`/`drop` event, rejecting
-   anything that isn't `image/jpeg` or `image/png` or is over 2MB before a preview is even
-   generated — with `StoreStudentRequest`'s `image`/`mimes`/`max` rules still doing the real,
-   authoritative check on the server.
+---
+
+1. **Failed server-side validation didn't return the user to the right wizard step.** When validation failed, the whole page reloaded and the wizard's JavaScript always restarted at step one, even if the actual error was on step two or three, leaving the user with no visible error on the page.
+
+2. **Blade facade resolution.** It wasn't clear whether Laravel's default facades like `Storage` would work inside Blade views without an explicit import, since Laravel 11+ no longer lists facade aliases in `config/app.php`.
+
+3. **A drag-and-drop file input has no native wrong type validity state.** The HTML `accept` attribute only filters what the OS file picker shows, but files dragged in from the desktop can be any type, and the browser's built‑in validation has no check for that.
+
+---
+
+## 10 SOlutions
+
+1. Marked every input that had a server‑side validation error with a special marker, then had the wizard's JavaScript scan for that marker when the page loaded. This made the wizard jump directly to the step containing the first invalid field instead of always going back to step one.
+
+2. Confirmed that Laravel still registers default facade class aliases globally at boot time, even though they are no longer listed in `config/app.php`. This meant no import was needed in the Blade views.
+
+3. Added a small client‑side check that inspects the selected file's type and size directly when a file is chosen or dropped. It rejects anything that is not a JPEG or PNG image or is over 2MB, before any preview is generated. The server‑side validation still performs the real, authoritative check.
 
 ## 11. Reflection
 
-Building this registration system made the difference between client-side and server-side
-validation concrete instead of theoretical. The wizard's live input masks — stripping digits
-out of a name field, blocking letters in the mobile number, refusing a future birthdate —
-make the form pleasant to fill out, but none of them are trustworthy on their own. Every one
-of those checks disappears the moment someone submits the form with JavaScript disabled,
-crafts a raw HTTP request, or edits the DOM before clicking submit. The Form Request class is
-the actual gatekeeper: it runs on the server, where the developer controls it, and no
-client-side trick can bypass it. The rule I'll carry forward is simple: validate on the
-server always, and validate on the client only as a courtesy that mirrors — never replaces —
-the server-side rule.
+Here is the expanded version at roughly 500 words, keeping the casual and humanized tone:
 
-Handling user input also reframed how I think about a form. Every field the registration
-wizard asks for — student number, name, mobile number, date of birth, address — is a promise
-about the shape of the data future code can rely on. The regex rule that rejects a digit in a
-name field isn't pedantry; it's what keeps "Juan123" from silently becoming a permanent
-database record that every later report, export, or search has to work around. The `unique`
-rule on `student_number` and `email` is the same idea at the record level: it's what keeps
-one student from silently becoming two rows, which would eventually corrupt anything built on
-top of it, from attendance to billing. Designing the validation array field by field forced
-me to ask, for each one, "what actually breaks if this is wrong?" rather than reflexively
-marking everything `required` and calling it done.
+---
 
-Splitting the address into province, municipality/city, and barangay instead of one free-text
-field taught me something similar about structured data. A single "address" text box is easy
-to build but nearly useless to query — you can't reliably filter students by city if the city
-name might be spelled three different ways inside a paragraph of free text. Three separate,
-required fields cost a little more form-building effort but turn the address into data a
-report can actually group and filter on.
+Building this registration system made the difference between client-side and server-side validation feel real instead of just something I read about in a textbook. The wizard's live input masks, like stripping digits out of a name field, blocking letters in the mobile number, or refusing a future birthdate, make the form pleasant to fill out. But none of them are trustworthy on their own. Every one of those checks disappears the moment someone submits the form with JavaScript disabled, crafts a raw HTTP request, or edits the DOM before clicking submit. The Form Request class is the actual gatekeeper. It runs on the server, where the developer controls it, and no client-side trick can bypass it. The rule I'll carry forward is simple: always validate on the server, and only validate on the client as a courtesy that mirrors the server-side rule, never replaces it.
 
-Building the drag-and-drop photo upload changed how I think about file security specifically.
-A file input looks like just another form field, but it is a door into the server's
-filesystem, and a drag-and-drop zone makes that door even wider — nothing about dropping a
-file onto a styled rectangle guarantees it's actually an image. The `image` and
-`mimes:jpg,jpeg,png` rules exist to make sure a `.php` file renamed to `photo.jpg` never gets
-treated as a real image, and the `max:2048` rule exists so a single upload can't exhaust
-server storage. The client-side type/size check makes the experience nicer by rejecting an
-obviously wrong file before it's even uploaded, but I made sure it was never load-bearing:
-the server-side rule is what actually protects the application, and I verified that by
-writing a test that submits a `.pdf` disguised with an image-sounding name and confirming the
-server still rejects it. Storing the file through Laravel's `Storage` facade rather than
-writing to `public/` by hand also matters: the framework handles path generation and keeps
-uploaded content off predictable public paths until a symbolic link deliberately exposes it.
+Handling user input also reframed how I think about a form. Every field the registration wizard asks for, like student number, name, mobile number, date of birth, and address, is a promise about the shape of the data future code can rely on. The regex rule that rejects a digit in a name field isn't pedantry. It is what keeps "Juan123" from silently becoming a permanent database record that every later report, export, or search has to work around. The `unique` rule on `student_number` and `email` is the same idea at the record level. It is what keeps one student from silently becoming two rows, which would eventually corrupt anything built on top of it, from attendance to billing. Designing the validation array field by field forced me to ask, for each one, "what actually breaks if this is wrong?" rather than reflexively marking everything `required` and calling it done. That kind of thinking changed how I approach forms entirely. I started seeing each input not as a box to fill but as a contract between the user and the system.
 
-Finally, this project made the enterprise angle of "just a registration form" clear. A
-student record created here is exactly the kind of record that a billing system, an academic
-records system, and a learning management system will all eventually read. If the data
-entering that pipeline is wrong — a mistyped email, a duplicate student number, a malformed
-address — the damage doesn't stay contained to this form; it propagates to every system
-downstream. That is the real argument for strict validation and a guided, step-by-step
-collection process: not that they make the form "nicer," but that they are what makes the
-rest of the enterprise software built on top of this data trustworthy.
+Splitting the address into province, municipality or city, and barangay instead of one free-text field taught me something similar about structured data. A single "address" text box is easy to build but nearly useless to query. You can't reliably filter students by city if the city name might be spelled three different ways inside a paragraph of free text. Three separate required fields cost a little more form-building effort but turn the address into data a report can actually group and filter on. This might seem like a small detail, but in practice, it makes a huge difference when someone in the admin office needs to pull a list of all students from a specific province.
+
+Building the drag-and-drop photo upload changed how I think about file security specifically. A file input looks like just another form field, but it is a door into the server's filesystem, and a drag-and-drop zone makes that door even wider. Nothing about dropping a file onto a styled rectangle guarantees it is actually an image. The `image` and `mimes:jpg,jpeg,png` rules exist to make sure a `.php` file renamed to `photo.jpg` never gets treated as a real image, and the `max:2048` rule exists so a single upload can't exhaust server storage. The client-side type and size check makes the experience nicer by rejecting an obviously wrong file before it is even uploaded, but I made sure it was never load-bearing. The server-side rule is what actually protects the application, and I verified that by writing a test that submits a `.pdf` disguised with an image-sounding name and confirming the server still rejects it. Storing the file through Laravel's `Storage` facade rather than writing to `public/` by hand also matters. The framework handles path generation and keeps uploaded content off predictable public paths until a symbolic link deliberately exposes it. It gave me peace of mind knowing that even if something slipped past the front end, the back end would catch it.
+
+Finally, this project made the enterprise angle of "just a registration form" clear. A student record created here is exactly the kind of record that a billing system, an academic records system, and a learning management system will all eventually read. If the data entering that pipeline is wrong, like a mistyped email, a duplicate student number, or a malformed address, the damage doesn't stay contained to this form. It propagates to every system downstream. That is the real argument for strict validation and a guided step-by-step collection process. It is not that they make the form "nicer," but that they are what makes the rest of the enterprise software built on top of this data trustworthy. Getting this right from the start saves countless headaches later.
 
 ## 12. References
 
-*(Citations to be added — APA 7th edition.)*
+CMU/SEI. (n.d.). IDS56-J. Prevent arbitrary file upload. Carnegie Mellon University. https://cmu-sei.github.io/secure-coding-standards/sei-cert-oracle-coding-standard-for-java/recommendations/input-validation-and-data-sanitization-ids/ids56-j 
 
-## Local Setup
+Laracasts. (2025, August 13). How can I validate a form with Get method using FormRequest class? [Forum discussion]. https://laracasts.com/discuss/channels/laravel/how-can-i-validate-a-form-with-get-method-usng-formrequest-class?page=1&replyId=969344 
 
-```bash
-composer install
-npm install
-cp .env.example .env
-php artisan key:generate
-php artisan migrate
-php artisan storage:link
-npm run build   # or `npm run dev` / `composer run dev` during development
-php artisan serve
-```
+Laravel. (n.d.). Storage (Version 6.x) [API documentation]. https://api.laravel.com/docs/6.x/Illuminate/Support/Facades/Storage.html 
 
-Visiting the app's root URL redirects straight to `/students/register`, the registration
-wizard. Visit `/students` to view all registered students.
+Laravel. (n.d.). File storage (Version 10.x). https://laravel.com/docs/10.x/filesystem 
 
-## Running Tests
+Sencha. (2026, May 26). The complete guide to form validation in JavaScript (client & server side). https://www.sencha.com/blog/complete-guide-form-validation-javascript-client-server-side/ 
 
-```bash
-php artisan test --compact
-```
+Safeguard. (2026, July 14). Secure file upload handling in Node.js and Fastify. https://safeguard.sh/resources/blog/secure-file-uploads-nodejs-fastify 
+
