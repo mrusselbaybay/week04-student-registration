@@ -58,6 +58,10 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const invalidMessage = (input) => {
+        if (input.type === 'file' && input.validity.valueMissing) {
+            return 'Please attach a profile picture.';
+        }
+
         if (input.validity.valueMissing) {
             return 'This field is required.';
         }
@@ -77,15 +81,19 @@ document.addEventListener('DOMContentLoaded', () => {
         return input.validationMessage || 'Please check this field.';
     };
 
-    const markInvalid = (input) => {
-        input.classList.add('border-red-400', 'dark:border-red-500');
-        input.classList.remove('border-gray-300', 'dark:border-gray-600');
-        showFieldWarning(input, invalidMessage(input), { persist: true });
+    const borderTarget = (input) => (input.type === 'file' ? input.closest('[data-dropzone]') || input : input);
+
+    const markInvalid = (input, message = null) => {
+        const target = borderTarget(input);
+        target.classList.add('border-red-400', 'dark:border-red-500');
+        target.classList.remove('border-gray-300', 'dark:border-gray-600');
+        showFieldWarning(input, message || invalidMessage(input), { persist: true });
     };
 
     const markValid = (input) => {
-        input.classList.remove('border-red-400', 'dark:border-red-500');
-        input.classList.add('border-gray-300', 'dark:border-gray-600');
+        const target = borderTarget(input);
+        target.classList.remove('border-red-400', 'dark:border-red-500');
+        target.classList.add('border-gray-300', 'dark:border-gray-600');
         clearFieldWarning(input);
     };
 
@@ -113,6 +121,124 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+
+    const dropzone = form.querySelector('[data-dropzone]');
+    let photoPreviewUrl = null;
+
+    if (dropzone) {
+        const fileInput = dropzone.querySelector('input[type="file"]');
+        const emptyState = dropzone.querySelector('[data-dropzone-empty]');
+        const previewState = dropzone.querySelector('[data-dropzone-preview]');
+        const previewImage = dropzone.querySelector('[data-preview-image]');
+        const previewFilename = dropzone.querySelector('[data-preview-filename]');
+        const removeButton = dropzone.querySelector('[data-action="remove-photo"]');
+        const reviewPhoto = document.querySelector('[data-review-photo]');
+        const allowedTypes = ['image/jpeg', 'image/png'];
+        const maxBytes = 2 * 1024 * 1024;
+
+        const showEmptyState = () => {
+            emptyState.classList.remove('hidden');
+            emptyState.classList.add('flex');
+            previewState.classList.add('hidden');
+            previewState.classList.remove('flex');
+
+            if (photoPreviewUrl) {
+                URL.revokeObjectURL(photoPreviewUrl);
+                photoPreviewUrl = null;
+            }
+
+            if (reviewPhoto) {
+                reviewPhoto.classList.add('hidden');
+                reviewPhoto.src = '';
+            }
+        };
+
+        const showPreviewState = (file) => {
+            if (photoPreviewUrl) {
+                URL.revokeObjectURL(photoPreviewUrl);
+            }
+
+            photoPreviewUrl = URL.createObjectURL(file);
+            previewImage.src = photoPreviewUrl;
+            previewFilename.textContent = file.name;
+            emptyState.classList.add('hidden');
+            emptyState.classList.remove('flex');
+            previewState.classList.remove('hidden');
+            previewState.classList.add('flex');
+
+            if (reviewPhoto) {
+                reviewPhoto.src = photoPreviewUrl;
+                reviewPhoto.classList.remove('hidden');
+            }
+        };
+
+        const acceptFiles = (files) => {
+            const file = files[0];
+
+            if (!file) {
+                showEmptyState();
+
+                return;
+            }
+
+            if (!allowedTypes.includes(file.type)) {
+                fileInput.value = '';
+                showEmptyState();
+                markInvalid(fileInput, 'Only JPG or PNG images are allowed.');
+
+                return;
+            }
+
+            if (file.size > maxBytes) {
+                fileInput.value = '';
+                showEmptyState();
+                markInvalid(fileInput, 'The image must not be larger than 2MB.');
+
+                return;
+            }
+
+            showPreviewState(file);
+            markValid(fileInput);
+        };
+
+        dropzone.addEventListener('click', () => fileInput.click());
+
+        dropzone.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                fileInput.click();
+            }
+        });
+
+        dropzone.addEventListener('dragover', (event) => {
+            event.preventDefault();
+            dropzone.classList.add('border-blue-500', 'bg-blue-50', 'dark:bg-blue-900/20');
+        });
+
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('border-blue-500', 'bg-blue-50', 'dark:bg-blue-900/20');
+        });
+
+        dropzone.addEventListener('drop', (event) => {
+            event.preventDefault();
+            dropzone.classList.remove('border-blue-500', 'bg-blue-50', 'dark:bg-blue-900/20');
+
+            if (event.dataTransfer.files.length) {
+                fileInput.files = event.dataTransfer.files;
+                acceptFiles(fileInput.files);
+            }
+        });
+
+        fileInput.addEventListener('click', (event) => event.stopPropagation());
+        fileInput.addEventListener('change', () => acceptFiles(fileInput.files));
+
+        removeButton.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            fileInput.value = '';
+            showEmptyState();
+        });
+    }
 
     let current = 0;
 
