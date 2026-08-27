@@ -26,6 +26,7 @@ return new class extends Migration
             $table->string('province');
             $table->string('municipality_city');
             $table->string('barangay');
+            $table->string('profile_picture');
             $table->timestamps();
         });
     }

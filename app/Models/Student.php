@@ -26,6 +26,7 @@ class Student extends Model
         'province',
         'municipality_city',
         'barangay',
+        'profile_picture',
     ];
 
     /**
