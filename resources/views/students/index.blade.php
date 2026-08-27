@@ -20,9 +20,11 @@
                 @foreach ($students as $student)
                     <li>
                         <a href="{{ route('students.show', $student) }}" class="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
-                                {{ mb_substr($student->first_name, 0, 1) }}{{ mb_substr($student->last_name, 0, 1) }}
-                            </div>
+                            <img
+                                src="{{ Storage::url($student->profile_picture) }}"
+                                alt="Profile picture of {{ $student->first_name }} {{ $student->last_name }}"
+                                class="h-10 w-10 shrink-0 rounded-full border border-gray-200 object-cover dark:border-gray-600"
+                            >
                             <div class="min-w-0 flex-1">
                                 <p class="truncate text-sm font-medium text-gray-900 dark:text-white">
                                     {{ $student->first_name }} {{ $student->last_name }}

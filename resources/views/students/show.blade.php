@@ -4,9 +4,11 @@
 
 @section('content')
     <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800 sm:p-8">
-        <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xl font-semibold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
-            {{ mb_substr($student->first_name, 0, 1) }}{{ mb_substr($student->last_name, 0, 1) }}
-        </div>
+        <img
+            src="{{ Storage::url($student->profile_picture) }}"
+            alt="Profile picture of {{ $student->first_name }} {{ $student->last_name }}"
+            class="h-24 w-24 shrink-0 rounded-full border border-gray-200 object-cover dark:border-gray-700"
+        >
 
         <div class="mt-4">
             <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">
