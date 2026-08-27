@@ -18,18 +18,19 @@ class StudentFactory extends Factory
     public function definition(): array
     {
         return [
-            'student_id' => strtoupper($this->faker->unique()->bothify('##-####-??')),
+            'student_number' => $this->faker->unique()->numerify('####-####'),
             'first_name' => $this->faker->firstName(),
             'middle_name' => $this->faker->optional()->lastName(),
             'last_name' => $this->faker->lastName(),
             'email' => $this->faker->unique()->safeEmail(),
             'mobile_number' => $this->faker->numerify('09#########'),
-            'date_of_birth' => $this->faker->date(),
+            'date_of_birth' => $this->faker->dateTimeBetween('-25 years', '-16 years')->format('Y-m-d'),
             'gender' => $this->faker->randomElement(['Male', 'Female', 'Other']),
             'program' => $this->faker->randomElement(['BS Information Technology', 'BS Computer Science', 'BS Information Systems']),
             'year_level' => $this->faker->randomElement(['1st Year', '2nd Year', '3rd Year', '4th Year']),
-            'address' => $this->faker->address(),
-            'profile_picture' => 'profile_pictures/placeholder.jpg',
+            'province' => $this->faker->randomElement(['Metro Manila', 'Cavite', 'Laguna', 'Bulacan', 'Rizal']),
+            'municipality_city' => $this->faker->city(),
+            'barangay' => 'Barangay '.$this->faker->numberBetween(1, 176),
         ];
     }
 }

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('students', function (Blueprint $table) {
             $table->id();
-            $table->string('student_id')->unique();
+            $table->string('student_number')->unique();
             $table->string('first_name');
             $table->string('middle_name')->nullable();
             $table->string('last_name');
@@ -23,8 +23,9 @@ return new class extends Migration
             $table->string('gender');
             $table->string('program');
             $table->string('year_level');
-            $table->text('address');
-            $table->string('profile_picture');
+            $table->string('province');
+            $table->string('municipality_city');
+            $table->string('barangay');
             $table->timestamps();
         });
     }
