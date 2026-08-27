@@ -32,7 +32,12 @@ class StudentController extends Controller
      */
     public function store(StoreStudentRequest $request): RedirectResponse
     {
-        $student = Student::create($request->validated());
+        $validated = $request->validated();
+
+        $validated['profile_picture'] = $request->file('profile_picture')
+            ->store('profile_pictures', 'public');
+
+        $student = Student::create($validated);
 
         return redirect()
             ->route('students.show', $student)
