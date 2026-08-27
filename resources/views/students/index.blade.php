@@ -3,12 +3,7 @@
 @section('title', 'Registered Students')
 
 @section('content')
-    <div class="flex items-center justify-between">
-        <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Registered Students</h1>
-        <a href="{{ route('students.create') }}" class="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
-            Register a Student
-        </a>
-    </div>
+    <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Registered Students</h1>
 
     <div class="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
         @if ($students->isEmpty())

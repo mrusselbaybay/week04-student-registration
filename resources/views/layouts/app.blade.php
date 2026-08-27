@@ -10,14 +10,14 @@
         <nav class="border-b border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
             <div class="mx-auto flex max-w-4xl items-center justify-between px-4 py-4 sm:px-6">
                 <a href="{{ route('students.index') }}" class="text-lg font-semibold text-gray-900 dark:text-white">
-                    College of Information Technology
+                    Student Registration
                 </a>
                 <div class="flex items-center gap-4 text-sm">
                     <a href="{{ route('students.index') }}" class="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
                         Students
                     </a>
                     <a href="{{ route('students.create') }}" class="rounded-md bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700">
-                        Register a Student
+                        Register
                     </a>
                 </div>
             </div>

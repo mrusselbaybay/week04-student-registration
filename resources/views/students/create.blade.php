@@ -7,7 +7,7 @@
         <div class="mb-8 text-center">
             <h1 class="text-3xl font-semibold tracking-tight text-gray-900 dark:text-white">Student Registration</h1>
             <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                A few quick steps to get you enrolled at the College of Information Technology.
+                A few quick steps to complete your registration.
             </p>
         </div>
 
