@@ -13,6 +13,32 @@ class StoreStudentRequest extends FormRequest
     private const NAME_PATTERN = "/^[\p{L}\s'-]+$/u";
 
     /**
+     * The Bachelor of Science programs offered by the college.
+     *
+     * @var array<int, string>
+     */
+    public const PROGRAMS = [
+        'BS Biology',
+        'BS Chemistry',
+        'BS Mathematics',
+        'BS Psychology',
+        'BS Office Administration',
+        'BS Entrepreneurship',
+        'BS Accountancy',
+        'BS Information Technology',
+        'BS Computer Science',
+        'BS Criminology',
+        'BS Electronics Engineering',
+        'BS Mechanical Engineering',
+        'BS Electrical Engineering',
+        'BS Civil Engineering',
+        'BS Computer Engineering',
+        'BS Industrial Technology',
+        'BS Hospitality Management',
+        'BS Tourism Management',
+    ];
+
+    /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
@@ -36,11 +62,12 @@ class StoreStudentRequest extends FormRequest
             'mobile_number' => ['required', 'digits_between:10,11'],
             'date_of_birth' => ['required', 'date', 'before:today'],
             'gender' => ['required', 'in:Male,Female,Other'],
-            'program' => ['required', 'string', 'max:150'],
+            'program' => ['required', 'in:'.implode(',', self::PROGRAMS)],
             'year_level' => ['required', 'string', 'max:50'],
             'province' => ['required', 'string', 'max:100'],
             'municipality_city' => ['required', 'string', 'max:100'],
             'barangay' => ['required', 'string', 'max:100'],
+            'profile_picture' => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
         ];
     }
 
@@ -57,6 +84,7 @@ class StoreStudentRequest extends FormRequest
             'mobile_number' => 'mobile number',
             'year_level' => 'year level',
             'municipality_city' => 'municipality/city',
+            'profile_picture' => 'profile picture',
         ];
     }
 
@@ -74,6 +102,9 @@ class StoreStudentRequest extends FormRequest
             'last_name.regex' => 'The last name may only contain letters.',
             'mobile_number.digits_between' => 'The mobile number must be 10 to 11 digits and contain numbers only.',
             'date_of_birth.before' => 'The date of birth cannot be in the future.',
+            'program.in' => 'Please select a valid program from the list.',
+            'profile_picture.required' => 'Please attach a profile picture.',
+            'profile_picture.image' => 'The profile picture must be a JPG or PNG image.',
         ];
     }
 }
