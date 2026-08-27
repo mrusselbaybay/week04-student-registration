@@ -3,7 +3,7 @@
 use App\Http\Controllers\StudentController;
 use Illuminate\Support\Facades\Route;
 
-Route::redirect('/', '/students');
+Route::redirect('/', '/students/register');
 
 Route::controller(StudentController::class)->prefix('students')->name('students.')->group(function () {
     Route::get('/', 'index')->name('index');
