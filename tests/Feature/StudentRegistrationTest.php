@@ -2,6 +2,8 @@
 
 use App\Models\Student;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
 
@@ -21,6 +23,7 @@ function validStudentPayload(array $overrides = []): array
         'province' => 'Metro Manila',
         'municipality_city' => 'Quezon City',
         'barangay' => 'Barangay 176',
+        'profile_picture' => UploadedFile::fake()->create('profile.jpg', 100, 'image/jpeg'),
     ], $overrides);
 }
 
@@ -29,6 +32,8 @@ test('registration form is displayed', function () {
 });
 
 test('a student can register with valid data', function () {
+    Storage::fake('public');
+
     $response = $this->post(route('students.store'), validStudentPayload());
 
     $student = Student::sole();
@@ -42,6 +47,8 @@ test('a student can register with valid data', function () {
         ->province->toBe('Metro Manila')
         ->municipality_city->toBe('Quezon City')
         ->barangay->toBe('Barangay 176');
+
+    Storage::disk('public')->assertExists($student->profile_picture);
 });
 
 test('registration requires all mandatory fields', function () {
@@ -49,13 +56,15 @@ test('registration requires all mandatory fields', function () {
 
     $response->assertSessionHasErrors([
         'student_number', 'first_name', 'last_name', 'email', 'mobile_number',
-        'date_of_birth', 'gender', 'program', 'year_level', 'province', 'municipality_city', 'barangay',
+        'date_of_birth', 'gender', 'program', 'year_level', 'province', 'municipality_city',
+        'barangay', 'profile_picture',
     ]);
 
     expect(Student::count())->toBe(0);
 });
 
 test('student number must be unique', function () {
+    Storage::fake('public');
     Student::factory()->create(['student_number' => '0124-0439']);
 
     $response = $this->post(route('students.store'), validStudentPayload());
@@ -101,6 +110,22 @@ test('date of birth cannot be in the future', function () {
     ]));
 
     $response->assertSessionHasErrors('date_of_birth');
+});
+
+test('profile picture must be an image', function () {
+    $response = $this->post(route('students.store'), validStudentPayload([
+        'profile_picture' => UploadedFile::fake()->create('resume.pdf', 100, 'application/pdf'),
+    ]));
+
+    $response->assertSessionHasErrors('profile_picture');
+});
+
+test('program must be one of the offered programs', function () {
+    $response = $this->post(route('students.store'), validStudentPayload([
+        'program' => 'BS Underwater Basket Weaving',
+    ]));
+
+    $response->assertSessionHasErrors('program');
 });
 
 test('a registered student profile can be viewed', function () {
