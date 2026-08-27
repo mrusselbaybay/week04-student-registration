@@ -1,7 +1,7 @@
 <?php
 
-test('the application redirects the homepage to the student registration system', function () {
+test('the application redirects the homepage to the student registration form', function () {
     $response = $this->get('/');
 
-    $response->assertRedirect('/students');
+    $response->assertRedirect('/students/register');
 });

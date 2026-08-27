@@ -2,15 +2,13 @@
 
 use App\Models\Student;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
 
 function validStudentPayload(array $overrides = []): array
 {
     return array_merge([
-        'student_id' => '24-0001-IT',
+        'student_number' => '0124-0439',
         'first_name' => 'Juan',
         'middle_name' => 'Santos',
         'last_name' => 'Dela Cruz',
@@ -20,8 +18,9 @@ function validStudentPayload(array $overrides = []): array
         'gender' => 'Male',
         'program' => 'BS Information Technology',
         'year_level' => '1st Year',
-        'address' => '123 Rizal Street, Manila',
-        'profile_picture' => UploadedFile::fake()->create('profile.jpg', 100, 'image/jpeg'),
+        'province' => 'Metro Manila',
+        'municipality_city' => 'Quezon City',
+        'barangay' => 'Barangay 176',
     ], $overrides);
 }
 
@@ -30,8 +29,6 @@ test('registration form is displayed', function () {
 });
 
 test('a student can register with valid data', function () {
-    Storage::fake('public');
-
     $response = $this->post(route('students.store'), validStudentPayload());
 
     $student = Student::sole();
@@ -40,34 +37,41 @@ test('a student can register with valid data', function () {
     $response->assertSessionHas('success', 'Student registered successfully!');
 
     expect($student)
-        ->student_id->toBe('24-0001-IT')
-        ->email->toBe('juan.delacruz@example.com');
-
-    Storage::disk('public')->assertExists($student->profile_picture);
+        ->student_number->toBe('0124-0439')
+        ->email->toBe('juan.delacruz@example.com')
+        ->province->toBe('Metro Manila')
+        ->municipality_city->toBe('Quezon City')
+        ->barangay->toBe('Barangay 176');
 });
 
 test('registration requires all mandatory fields', function () {
     $response = $this->post(route('students.store'), []);
 
     $response->assertSessionHasErrors([
-        'student_id', 'first_name', 'last_name', 'email', 'mobile_number',
-        'date_of_birth', 'gender', 'program', 'year_level', 'address', 'profile_picture',
+        'student_number', 'first_name', 'last_name', 'email', 'mobile_number',
+        'date_of_birth', 'gender', 'program', 'year_level', 'province', 'municipality_city', 'barangay',
     ]);
 
     expect(Student::count())->toBe(0);
 });
 
-test('student id must be unique', function () {
-    Storage::fake('public');
-    Student::factory()->create(['student_id' => '24-0001-IT']);
+test('student number must be unique', function () {
+    Student::factory()->create(['student_number' => '0124-0439']);
 
     $response = $this->post(route('students.store'), validStudentPayload());
 
-    $response->assertSessionHasErrors('student_id');
+    $response->assertSessionHasErrors('student_number');
+});
+
+test('student number must follow the 0000-0000 format', function () {
+    $response = $this->post(route('students.store'), validStudentPayload([
+        'student_number' => '12345678',
+    ]));
+
+    $response->assertSessionHasErrors('student_number');
 });
 
 test('email must be unique', function () {
-    Storage::fake('public');
     Student::factory()->create(['email' => 'juan.delacruz@example.com']);
 
     $response = $this->post(route('students.store'), validStudentPayload());
@@ -75,22 +79,35 @@ test('email must be unique', function () {
     $response->assertSessionHasErrors('email');
 });
 
-test('profile picture must be an image', function () {
-    Storage::fake('public');
-
+test('names cannot contain digits', function () {
     $response = $this->post(route('students.store'), validStudentPayload([
-        'profile_picture' => UploadedFile::fake()->create('resume.pdf', 100, 'application/pdf'),
+        'first_name' => 'Juan123',
     ]));
 
-    $response->assertSessionHasErrors('profile_picture');
+    $response->assertSessionHasErrors('first_name');
+});
+
+test('mobile number cannot contain letters', function () {
+    $response = $this->post(route('students.store'), validStudentPayload([
+        'mobile_number' => '0917abc4567',
+    ]));
+
+    $response->assertSessionHasErrors('mobile_number');
+});
+
+test('date of birth cannot be in the future', function () {
+    $response = $this->post(route('students.store'), validStudentPayload([
+        'date_of_birth' => now()->addDay()->format('Y-m-d'),
+    ]));
+
+    $response->assertSessionHasErrors('date_of_birth');
 });
 
 test('a registered student profile can be viewed', function () {
-    Storage::fake('public');
     $student = Student::factory()->create();
 
     $this->get(route('students.show', $student))
         ->assertOk()
         ->assertSee($student->first_name)
-        ->assertSee($student->student_id);
+        ->assertSee($student->student_number);
 });
